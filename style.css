@@ -1,0 +1,129 @@
+/*
+Theme Name: D8 Linux Terminal Theme
+Theme URI: http://d8devs.com/d8-linux-terminal-wordpress-theme
+Author: d8devs
+Author URI: http://d8devs.com
+Description: A terminal-like WordPress theme.
+Version: 1.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: d8-linux-terminal-theme
+*/
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+}
+
+#terminal {
+    background-color: #300a24; /* Ubuntu terminal background color */
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    padding: 20px;
+    height: 100%;
+    box-sizing: border-box; /* Include padding in height calculation */
+    position: relative; /* Needed for absolute positioning of children */
+}
+
+#history {
+    height: calc(100% - 60px); /* Adjust height considering command input height */
+    overflow-y: auto;
+    background-color: #300a24; /* Terminal background color */
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    padding: 10px;
+    box-sizing: border-box; /* Include padding in height calculation */
+}
+
+#commandInput {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1em;
+    box-sizing: border-box;
+}
+
+#suggestions {
+    color: #aaa; /* Lighter color for suggestions */
+    font-style: italic;
+    margin-top: 10px;
+}
+
+.command-line {
+    display: flex; /* Use flexbox to align items in a row */
+    align-items: center; /* Align items vertically in the center */
+    white-space: nowrap; /* Prevent wrapping to a new line */
+}
+
+.command-line input {
+    flex-grow: 1; /* Allow input to take up available space */
+    margin-left: 5px; /* Optional: Add some space between $ and input */
+}
+
+.clickable-post {
+    color: #4A90E2; /* Example color */
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.terminal-button {
+    background-color: #333; /* Dark background */
+    color: #fff; /* White text */
+    border: none;
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+}
+
+.terminal-button:hover {
+    background-color: #555; /* Slightly lighter background on hover */
+}
+
+.pagination-controls {
+    text-align: center;
+    margin-top: 10px;
+}
+
+#history > img {
+    max-width: 90%;
+    height: auto;
+    border: 3px solid #fff; /* White border */
+    padding: 5px;
+    background-color: #000; /* Black background for the frame */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Optional: Adds a shadow for depth */
+}
+
+
+#history > img {
+    transition: transform 0.3s ease;
+}
+
+#history > img:hover {
+    transform: scale(1.05);
+}
+
+/* Style for the terminal links */
+.terminal-link {
+    color: #FF865C; /* Ubuntu terminal link color */
+    text-decoration: none; /* Removes underline from links */
+    cursor: pointer;
+}
+
+.terminal-link:hover {
+    text-decoration: underline; /* Adds underline on hover */
+}
+
+/* Style for the share links section */
+.share-links a {
+    color: #FF865C; /* Ubuntu terminal link color */
+    margin-right: 10px; /* Adds some space between the links */
+}
+
+.share-links a:hover {
+    text-decoration: underline; /* Adds underline on hover */
+}
