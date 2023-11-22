@@ -29,7 +29,7 @@ The theme includes several custom commands that can be used to navigate and inte
 ## Installation
 To install the D8 Linux Terminal Theme on your WordPress site, follow these steps:
 
-1. Download the theme as a ZIP file from the [GitHub repository](#).
+1. Download the theme: [D8 Linux Terminal Theme v1.0.0](https://github.com/kzorluoglu/d8terminal/releases/tag/1.0.0)
 2. Log in to your WordPress admin panel.
 3. Go to `Appearance` > `Themes`.
 4. Click on `Add New` and then `Upload Theme`.
