@@ -9,6 +9,7 @@
 	<?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
+<?php wp_body_open(); ?>
     <div id="terminal">
 	    <div id="history"></div>
     </div>

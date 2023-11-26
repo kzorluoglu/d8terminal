@@ -9,6 +9,9 @@ License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: d8-linux-terminal-theme
 Tags: linux terminal, ubuntu terminal, real-time terminal like unix
+Copyright: © 2023 d8devs. All rights reserved.
+Tested up to: 8.0
+Requires PHP: 8.0
 */
 body, html {
     margin: 0;
