@@ -1,4 +1,17 @@
 <?php
+
+function d8_set_permalink_structure() {
+    // Check if the permalink structure is already set to 'post name'
+    if ( get_option('permalink_structure') !== '/%postname%/' ) {
+        // Set the permalink structure to 'post name'
+        global $wp_rewrite;
+        $wp_rewrite->set_permalink_structure('/%postname%/');
+        $wp_rewrite->flush_rules();
+    }
+}
+
+add_action('after_switch_theme', 'd8_set_permalink_structure');
+
 function terminal_theme_scripts() {
     wp_enqueue_style('terminal-style', get_template_directory_uri() . '/style.css');
     // Enqueue your script
@@ -8,12 +21,16 @@ function terminal_theme_scripts() {
     wp_localize_script('terminal-theme-script', 'wpData', array(
         'baseUrl' => get_site_url(),
 		'siteTitle' => get_bloginfo('name'), // Retrieves the WordPress site title
-		'siteDescription' => get_bloginfo('description'), // Retrieves the WordPress site description 
+		'siteDescription' => get_bloginfo('description'), // Retrieves the WordPress site description
+        'memoryUsage' => size_format(memory_get_usage(), 2),
+        'currentTheme' => wp_get_theme()->get('Name'),
+        'serverSoftware' => $_SERVER['SERVER_SOFTWARE'],
+        'ipAddress' => $_SERVER['REMOTE_ADDR'],
+        'requestTime' => $_SERVER['REQUEST_TIME'],
     ));
 }
 
 add_action('wp_enqueue_scripts', 'terminal_theme_scripts');
-
 
 function terminal_setup() {
     add_theme_support( 'title-tag' );
@@ -25,15 +42,15 @@ add_action( 'after_setup_theme', 'terminal_setup' );
 
 
 function terminal_meta_description() {
+
+    $description = '';
+
     if (is_single() || is_page()) {
         // For single posts or pages
         $description = get_the_excerpt();
     } elseif (is_home() || is_front_page()) {
         // For the home/front page
         $description = get_bloginfo('description');
-    } else {
-        // Default description
-        $description = 'Your default description here';
     }
 
     return esc_attr(strip_tags($description));

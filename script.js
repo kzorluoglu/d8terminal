@@ -2,21 +2,29 @@ const config = {
     baseUrl: wpData.baseUrl, // This will be dynamically set to the WordPress base URL,
 	siteTitle: wpData.siteTitle,
 	siteDescription: wpData.siteDescription,
+    currentTheme: wpData.currentTheme,
+    memoryUsage: wpData.memoryUsage,
+    serverSoftware: wpData.serverSoftware,
+    ipAddress: wpData.ipAddress,
+    requestTime: wpData.requestTime,
 
 };
 
 const history = document.getElementById('history');
 
-welcomeScreen();
+document.addEventListener('DOMContentLoaded', (event) => {
+    welcomeScreen();
+});
 
-function welcomeScreen() {
-	getTitle();
-	executeCommand('help');
+async function welcomeScreen() {
+	getTitle().then(r => {
+        executeCommand('help').then(r => {
+            autoExecuteCommandFromURL();
+        });
+    } );
 }
 
-document.addEventListener('DOMContentLoaded', (event) => {
-    autoExecuteCommandFromURL();
-});
+
 
 async function autoExecuteCommandFromURL() {
     const url = window.location.href;
@@ -123,6 +131,9 @@ function appendCommandInput() {
 
 async function getTitle() {
 
+    const totalPosts = await getTotalPosts();
+    const totalCategories = await getTotalCategories();
+
 	const domain = new URL(config.baseUrl).hostname;
 	const emailAddress = `hello@${domain}`;
 
@@ -131,14 +142,30 @@ async function getTitle() {
 	history.innerHTML += `<div class="command-output">$</div>`;
 	history.innerHTML += `<div class="command-output">$ System information as of ${new Date().toLocaleString()}</div>`;
 	history.innerHTML += `<div class="command-output">$</div>`;
-	history.innerHTML += `<div class="command-output">$ System load:  [Data Unavailable]    Processes:           [Data Unavailable]</div>`;
-	history.innerHTML += `<div class="command-output">$ Usage of /:   [Data Unavailable]    Users logged in:     [Data Unavailable]</div>`;
-	history.innerHTML += `<div class="command-output">$ Memory usage: [Data Unavailable]    IP address:          [Data Unavailable]</div>`;
-	history.innerHTML += `<div class="command-output">$ Swap usage:   [Data Unavailable]</div>`;
-	history.innerHTML += `<div class="command-output">$</div>`;
-	history.innerHTML += `<div class="command-output">$ [Number] articles can be explored.</div>`;
-	history.innerHTML += `<div class="command-output">$ [Number] categories to discover.</div>`;
-	history.innerHTML += `<div class="command-output">$</div>`;
+    history.innerHTML += `
+    <table class="no-spacing">
+        <tr>
+            <td>$ System software:</td>
+            <td>${config.serverSoftware}</td>
+            <td>Total Articles:</td>
+            <td>${totalPosts}</td>
+        </tr>
+        <tr>
+            <td>$ Request Time:</td>
+            <td>${config.requestTime}</td>
+            <td>Total Categories:</td>
+            <td>${totalCategories}</td>
+        </tr>
+        <tr>
+            <td>$ Memory usage:</td>
+            <td>${config.memoryUsage}</td>
+            <td>IP address:</td>
+            <td>${config.ipAddress}</td>
+        </tr>
+    </table>
+`;
+    history.innerHTML += `<div class="command-output">$ Current theme: ${config.currentTheme} </div>`;
+    history.innerHTML += `<div class="command-output">$</div>`;
 }
 
 
@@ -350,4 +377,24 @@ function openImagePopup(imageUrl) {
     });
 
     document.body.appendChild(popup);
+}
+
+async function getTotalPosts() {
+    try {
+        const response = await fetch(`${config.baseUrl}/wp-json/wp/v2/posts?per_page=1`);
+        return response.headers.get('X-WP-Total');
+    } catch (error) {
+        console.error('Error fetching total posts:', error);
+        return 'Unavailable';
+    }
+}
+
+async function getTotalCategories() {
+    try {
+        const response = await fetch(`${config.baseUrl}/wp-json/wp/v2/categories?per_page=1`);
+        return response.headers.get('X-WP-Total');
+    } catch (error) {
+        console.error('Error fetching total categories:', error);
+        return 'Unavailable';
+    }
 }
