@@ -20,8 +20,8 @@ function terminal_theme_scripts() {
     // Localize script with base URL
     wp_localize_script('terminal-theme-script', 'wpData', array(
         'baseUrl' => get_site_url(),
-		'siteTitle' => get_bloginfo('name'), // Retrieves the WordPress site title
-		'siteDescription' => get_bloginfo('description'), // Retrieves the WordPress site description
+		'siteTitle' => get_bloginfo('name'), // Retrieves the site title
+		'siteDescription' => get_bloginfo('description'), // Retrieves the site description
         'memoryUsage' => size_format(memory_get_usage(), 2),
         'currentTheme' => wp_get_theme()->get('Name'),
         'serverSoftware' => $_SERVER['SERVER_SOFTWARE'],

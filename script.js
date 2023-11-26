@@ -1,5 +1,5 @@
 const config = {
-    baseUrl: wpData.baseUrl, // This will be dynamically set to the WordPress base URL,
+    baseUrl: wpData.baseUrl, // This will be dynamically set to the base URL,
 	siteTitle: wpData.siteTitle,
 	siteDescription: wpData.siteDescription,
     currentTheme: wpData.currentTheme,
@@ -344,7 +344,7 @@ async function getCategoryIDByName(categoryName) {
 
 
 async function searchPosts(query) {
-    // AJAX request to WordPress to search posts
+    // AJAX request to search posts
 }
 
 async function outputError(message) {
