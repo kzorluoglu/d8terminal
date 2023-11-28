@@ -1,17 +1,13 @@
 /*
-Theme Name: D8 Linux Terminal
-Theme URI: https://d8devs.com/introducing-the-d8-linux-terminal-theme-a-unique-wordpress-experience
+Theme Name: D8 Linux Terminal Theme
+Theme URI: http://d8devs.com/d8-linux-terminal-wordpress-theme
 Author: d8devs
 Author URI: http://d8devs.com
 Description: A terminal-like WordPress theme.
-Version: 1.1.0
+Version: 1.0
 License: GNU General Public License v2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: d8-linux-terminal-theme
-Tags: linux terminal, ubuntu terminal, real-time terminal like unix
-Copyright: © 2023 d8devs. All rights reserved.
-Tested up to: 8.0
-Requires PHP: 8.0
 */
 body, html {
     margin: 0;
@@ -128,6 +124,10 @@ body, html {
     margin-right: 10px; /* Adds some space between the links */
 }
 
+.text-orange {
+    color: #FF865C; /* Ubuntu terminal link color */
+}
+
 .share-links a:hover {
     text-decoration: underline; /* Adds underline on hover */
 }
@@ -177,9 +177,4 @@ p {
 ul, ol {
     margin-left: 20px;
     margin-bottom: 1em;
-}
-
-.terminal-error {
-    color: #FF0000; /* Red color */
-    /* Add any other styles as necessary */
 }

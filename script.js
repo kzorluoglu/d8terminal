@@ -1,12 +1,13 @@
 const config = {
-    baseUrl: wpData.baseUrl, // This will be dynamically set to the base URL,
-	siteTitle: wpData.siteTitle,
-	siteDescription: wpData.siteDescription,
+    baseUrl: wpData.baseUrl, // This will be dynamically set to the WordPress base URL,
+    siteTitle: wpData.siteTitle,
+    siteDescription: wpData.siteDescription,
     currentTheme: wpData.currentTheme,
     memoryUsage: wpData.memoryUsage,
     serverSoftware: wpData.serverSoftware,
     ipAddress: wpData.ipAddress,
     requestTime: wpData.requestTime,
+
 };
 
 const history = document.getElementById('history');
@@ -16,121 +17,105 @@ document.addEventListener('DOMContentLoaded', (event) => {
 });
 
 async function welcomeScreen() {
-	getTitle().then(r => {
+    getTitle().then(r => {
         executeCommand('help').then(r => {
             autoExecuteCommandFromURL();
         });
     } );
 }
 
+
+
 async function autoExecuteCommandFromURL() {
-    const pathname = new URL(window.location.href).pathname;
+    const url = window.location.href;
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname;
 
-    if (pathname === '/'){
-        // Default action if no specific category or post is found in the URL
-        await executeCommand('ls');
-        return;
-    }
-
-    let nameOrSlug = pathname.slice(1);
-    if (nameOrSlug.endsWith('/')) {
-        nameOrSlug = nameOrSlug.slice(0, -1);
-    }
-
-    // Check if it's a category or a post. Any other non-root pathname is considered a post slug
     if (pathname.startsWith('/category/')) {
-        const categoryId = await getCategoryIDByName(nameOrSlug.replace('category/', ''));
-        await executeCommand(`posts ${categoryId}`);
+        let categoryName = pathname.split('/category/')[1];
+        if (categoryName.endsWith('/')) {
+            categoryName = categoryName.slice(0, -1);
+        }
+        const categoryId = await getCategoryIDByName(categoryName);
+        executeCommand(`posts ${categoryId}`);
+    } else if (pathname !== '/' && !pathname.startsWith('/category/')) {
+        // Assuming that any other non-root, non-category pathname is a post slug
+        let postSlug = pathname.slice(1); // Remove the leading '/'
+        if (postSlug.endsWith('/')) {
+            postSlug = postSlug.slice(0, -1);
+        }
+        const postId = await getPostIDBySlug(postSlug);
+        executeCommand(`cat ${postId}`);
     } else {
-        const postId = await getPostIDBySlug(nameOrSlug);
-        await executeCommand(`cat ${postId}`);
+        // Default action if no specific category or post is found in the URL
+        executeCommand('ls');
     }
 }
 
 async function getPostIDBySlug(slug) {
-    let response;
     try {
-        response = await fetch(`/wp-json/wp/v2/posts?slug=${slug}`);
+        let response = await fetch(`/wp-json/wp/v2/posts?slug=${slug}`);
+        let posts = await response.json();
+        if (posts.length > 0) {
+            return posts[0].id; // Assuming the first post is the one we want
+        } else {
+            throw new Error('Post not found');
+        }
     } catch (error) {
-        console.error('Error while fetching:', error);
-        return null;
-    }
-
-    let posts;
-    try {
-        posts = await response.json();
-    } catch (error) {
-        console.error('Error while parsing response:', error);
-        return null;
-    }
-
-    if (posts.length > 0) {
-        return posts[0].id; // Assuming the first post is the one we want
-    } else {
-        console.error('Post not found');
+        console.error('Error fetching post ID:', error);
         return null;
     }
 }
 
 async function executeCommand(command) {
-    appendCommandLineToHistory(command);
+    history.innerHTML += `<div class="command-line">$ ${command}</div>`;
 
-    const [mainCommand, ...args] = command.split(' ');
-
+    let commandParts = command.split(' ');
+    let mainCommand = commandParts[0];
+    let arguments = commandParts.slice(1);
     try {
-        await executeMainCommand(mainCommand, args);
+        switch(mainCommand) {
+            case 'ls':
+                let page = arguments[0] || 1;
+                let perPage = arguments[1] || 10;
+                await listPosts(page, perPage);
+                break;
+            case 'cat':
+                await viewPost(arguments[0]);
+                break;
+            case 'search':
+                await searchPosts(arguments[0]);
+                break;
+            case 'categories':
+                await fetchCategories();
+                break;
+            case 'posts':
+                await listPostsByCategory(arguments[0]);
+                break;
+            case 'help':
+                getHelp();
+                break;
+            default:
+                outputError('Command not recognized');
+        }
     } catch (error) {
-        await outputError(` ${mainCommand}: An error occurred while executing the command.`);
+        outputError('An error occurred while executing the command.');
     } finally {
         await appendCommandInput();
-        scrollToBottomOfHistory();
+        history.scrollTop = history.scrollHeight;
     }
-}
 
-async function executeMainCommand(mainCommand, args) {
-    switch(mainCommand) {
-        case 'ls':
-            await listPosts(args[0] || 1, args[1] || 10);
-            break;
-        case 'cat':
-            await viewPost(args[0]);
-            break;
-        case 'search':
-            await searchPosts(args[0]);
-            break;
-        case 'categories':
-            await fetchCategories();
-            break;
-        case 'posts':
-            await listPostsByCategory(args[0]);
-            break;
-        case 'help':
-            await getHelp();
-            break;
-        default:
-            await outputError('Command not recognized');
-    }
-}
-
-function appendCommandLineToHistory(command, promptSymbol = true) {
-    // Include the $ symbol only if promptSymbol is true
-    const prompt = promptSymbol ? '$ ' : '';
-    history.innerHTML += `<div class="command-line">${prompt}${command}</div>`;
-}
-
-function scrollToBottomOfHistory() {
-    history.scrollTop = history.scrollHeight;
 }
 
 
 function appendCommandInput() {
-	// Remove existing command input line if it exists
+    // Remove existing command input line if it exists
     const existingCommandLine = history.querySelector('#commandInput');
     if (existingCommandLine) {
         existingCommandLine.parentElement.remove();
     }
     // Add the new command input field to the bottom of the history
-    appendCommandLineToHistory(`<input type="text" id="commandInput" placeholder="">`)
+    history.innerHTML += `<div class="command-line">$ <input type="text" id="commandInput" placeholder=""></div>`;
     const commandInput = document.getElementById('commandInput');
     commandInput.focus();
 
@@ -139,7 +124,7 @@ function appendCommandInput() {
         if (event.key === 'Enter') {
             let command = this.value.trim();
             executeCommand(command);
-            
+
         }
     });
 }
@@ -149,15 +134,16 @@ async function getTitle() {
     const totalPosts = await getTotalPosts();
     const totalCategories = await getTotalCategories();
 
-	const domain = new URL(config.baseUrl).hostname;
-	const emailAddress = `hello@${domain}`;
+    const domain = new URL(config.baseUrl).hostname;
+    const emailAddress = `hello@${domain}`;
 
-    appendCommandLineToHistory(`Welcome to ${config.siteTitle} - ${config.siteDescription}`);
-    appendCommandLineToHistory(` * For more information, email: ${emailAddress}`);
-    appendCommandLineToHistory(` `);
-    appendCommandLineToHistory(`System information as of ${new Date().toLocaleString()}`);
-    appendCommandLineToHistory(``);
-    appendCommandLineToHistory(`<table class="no-spacing">
+    history.innerHTML += `<div class="command-output">$ Welcome to ${config.siteTitle} - ${config.siteDescription}</div>`;
+    history.innerHTML += `<div class="command-output">$ * For more information, email: ${emailAddress}</div>`;
+    history.innerHTML += `<div class="command-output">$</div>`;
+    history.innerHTML += `<div class="command-output">$ System information as of ${new Date().toLocaleString()}</div>`;
+    history.innerHTML += `<div class="command-output">$</div>`;
+    history.innerHTML += `
+    <table class="no-spacing">
         <tr>
             <td>$ System software:</td>
             <td>${config.serverSoftware}</td>
@@ -177,9 +163,9 @@ async function getTitle() {
             <td>${config.ipAddress}</td>
         </tr>
     </table>
-`, false);
-    appendCommandLineToHistory( `Current theme: ${config.currentTheme}`);
-    appendCommandLineToHistory(``);
+`;
+    history.innerHTML += `<div class="command-output">$ Current theme: ${config.currentTheme} </div>`;
+    history.innerHTML += `<div class="command-output">$</div>`;
 }
 
 
@@ -197,185 +183,129 @@ async function getHelp() {
             </ul>
         </div>
     `;
-    appendCommandLineToHistory(`${helpText}`, false);
+    history.innerHTML += `<div class="command-output">${helpText}</div>`;
 }
 
-const fetchTotalPosts = async () => {
-    const response = await fetch(`/wp-json/wp/v2/posts?per_page=1`);
-    return parseInt(response.headers.get('X-WP-Total'));
-}
-
-const fetchPosts = async (page, perPage) => {
-    const response = await fetch(`/wp-json/wp/v2/posts?page=${page}&per_page=${perPage}&_embed`);
-    return await response.json();
-}
-
-async function fetchPost(id) {
-    const response = await fetch(`/wp-json/wp/v2/posts/${id}?_embed`);
-    return response.json();
-}
-
-const generateShareLinks = (url, title) => {
-    const twitterShareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`;
-    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
-    const linkedInShareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${url}&title=${title}`;
-
-    // Share Links HTML
-    return `
-<a href="${twitterShareUrl}" target="_blank" class="terminal-link"> Twitter</a> | 
-<a href="${facebookShareUrl}" target="_blank" class="terminal-link"> Facebook</a> | 
-<a href="${linkedInShareUrl}" target="_blank" class="terminal-link"> LinkedIn</a>
-    `;
-}
-const generateSocialMediaUrls = (post) => {
-    const postUrl = `${config.baseUrl}/${post.slug}`; // Adjust based on your site's URL structure
-    const postTitle = encodeURIComponent(post.title.rendered);
-
-    // Return social media links.
-    return `Share this post: ${generateShareLinks(postUrl, postTitle)}`;
-}
-
-const outputPosts = (posts) => {
-    return posts.map(post => {
-        return `ID: ${post.id} | <span class="clickable-post"
-onclick="executeCommand('cat ${post.id}')">${post.title.rendered}</span>
- | Date: ${new Date(post.date).toLocaleDateString()} | ${generateSocialMediaUrls(post)}`;
-    }).join('<br>');
-}
-
-const updatePaginationControls = (page, totalPages, perPage) => {
-    appendCommandLineToHistory('<div class="pagination-controls">', false);
-    if (page > 1) {
-        appendCommandLineToHistory(`<button class="terminal-button" onclick="executeCommand('ls ${parseInt(page) - 1} ${perPage}')">Previous Page</button>`, false);
-    }
-    if (page < totalPages) {
-        appendCommandLineToHistory(`<button class="terminal-button" onclick="executeCommand('ls ${parseInt(page) + 1} ${perPage}')">Next Page</button>`, false);
-    }
-    appendCommandLineToHistory('</div>', false);
-}
-
-
-const validatePagination = async (page, perPage) => {
-    const totalPosts = await fetchTotalPosts();
-    const totalPages = Math.ceil(totalPosts / perPage);
-
-    if (page > totalPages) {
-        await outputError(`Page ${page} does not exist. Total pages: ${totalPages}.`);
-        return false;
-    }
-
-    return true;
-}
 
 async function listPosts(page = 1, perPage = 10) {
     try {
-        const totalPosts = await fetchTotalPosts();
-        const totalPages = Math.ceil(totalPosts / perPage);
+        // First, fetch the total number of posts to calculate the total pages
+        let totalPostsResponse = await fetch(`/wp-json/wp/v2/posts?per_page=1`);
+        let totalPosts = parseInt(totalPostsResponse.headers.get('X-WP-Total'));
+        let totalPages = Math.ceil(totalPosts / perPage);
 
+        // Check if the requested page exceeds the total pages
         if (page > totalPages) {
-            await outputError(`Page ${page} does not exist. Total pages: ${totalPages}.`);
+            outputError(`Page ${page} does not exist. Total pages: ${totalPages}.`);
             return;
         }
 
-        const posts = await fetchPosts(page, perPage);
-        const output = posts.map(post => {
+        let response = await fetch(`/wp-json/wp/v2/posts?page=${page}&per_page=${perPage}&_embed`);
+        let posts = await response.json();
+
+        let output = posts.map(post => {
             let date = new Date(post.date).toLocaleDateString();
-            return `ID: ${post.id} | <span class="clickable-post" onclick="executeCommand('cat ${post.id}')">${post.title.rendered}</span> | Date: ${date} | ${generateSocialMediaUrls(post)}`;
-        }).join('<br><br>'); // Separate each item with two line breaks
+            let postUrl = `https://d8devs.com/${post.slug}`; // Adjust based on your site's URL structure
+            let postTitle = encodeURIComponent(post.title.rendered);
 
-        appendCommandLineToHistory(output);
-        updatePaginationControls(page, totalPages, perPage);
-    } catch (error) {
-        await outputError('Error fetching posts');
-    }
-}
+            // Generate social media share links
+            const socialMediaLinks = generateShareLinks(postUrl, postTitle);
 
-function generateContent(post) {
-    let content = [];
+            return `ID: ${post.id} | <span class="clickable-post" onclick="executeCommand('cat ${post.id}')">${post.title.rendered}</span> | Date: ${date} | ${socialMediaLinks}`;
+        }).join('<br>');
 
-    content.push(`<h2>${post.title.rendered}</h2>`);
+        history.innerHTML += output;
 
-    if (post._embedded && post._embedded['wp:featuredmedia'] && post._embedded['wp:featuredmedia'][0]) {
-        let imageUrl = post._embedded['wp:featuredmedia'][0].source_url;
-        content.push(`<img src="${imageUrl}" alt="${post.title.rendered}" onclick="openImagePopup('${imageUrl}')">`);
-    }
-
-    // handle pre code block
-    let splittedContent = post.content.rendered.split(/(\<pre[\s\S]*?\<\/pre>)/);
-
-    splittedContent.forEach(line => {
-        // For <pre> code block, keep it as it is. For normal text, split by newline.
-        if(line.startsWith("<pre")) {
-            content.push(line);
-        } else {
-            line.split('\n').forEach(subLine => content.push(subLine));
+        // Pagination controls
+        history.innerHTML += '<div class="pagination-controls">';
+        if (page > 1) {
+            history.innerHTML += `<button class="terminal-button" onclick="executeCommand('ls ${parseInt(page) - 1} ${perPage}')">Previous Page</button>`;
         }
-    });
-
-    return content;
+        if (page < totalPages) {
+            history.innerHTML += `<button class="terminal-button" onclick="executeCommand('ls ${parseInt(page) + 1} ${perPage}')">Next Page</button>`;
+        }
+        history.innerHTML += '</div>';
+    } catch (error) {
+        outputError('Error fetching posts');
+    }
 }
+
 
 async function viewPost(identifier) {
+    let apiUrl = `/wp-json/wp/v2/posts/${identifier}?_embed`;
+
     try {
-        let post = await fetchPost(identifier);
+        let response = await fetch(apiUrl);
+        let post = await response.json();
 
         if (!post || post.length === 0) {
-            await outputError('Post not found');
+            outputError('Post not found');
             return;
         }
 
-        const contents = generateContent(post);
-        contents.forEach(content => appendCommandLineToHistory(content, false));
+        let content = `<h2>${post.title.rendered}</h2>`;
 
-        appendCommandLineToHistory(generateSocialMediaUrls(post), false);
-        scrollToBottomOfHistory();
+        // Check if the post has a featured image
+        if (post._embedded && post._embedded['wp:featuredmedia'] && post._embedded['wp:featuredmedia'][0]) {
+            let imageUrl = post._embedded['wp:featuredmedia'][0].source_url;
+            content += `<img src="${imageUrl}" alt="${post.title.rendered}" onclick="openImagePopup('${imageUrl}')">`;
 
+        }
+
+        content += `${post.content.rendered}`;
+        history.innerHTML += content;
+
+        let postUrl = `${config.baseUrl}/${post.slug}`; // Adjust based on your site's URL structure
+        let postTitle = encodeURIComponent(post.title.rendered);
+
+        history.innerHTML += generateShareLinks(postUrl, postTitle);
     } catch (error) {
-        await outputError('Error fetching post');
+        outputError('Error fetching post');
     }
 }
 
 async function fetchCategories() {
     try {
-        const response = await fetch('/wp-json/wp/v2/categories');
-        const categories = await response.json();
+        let response = await fetch('/wp-json/wp/v2/categories');
+        let categories = await response.json();
         displayCategories(categories);
     } catch (error) {
-        await outputError('Error fetching categories');
+        outputError('Error fetching categories');
     }
 }
 
 function displayCategories(categories) {
     let output = categories.map(category => {
+
         let categoryUrl = `${config.baseUrl}/${category.slug}`; // Adjust based on your site's URL structure
         let categoryTitle = encodeURIComponent(category.name);
 
-        // Return ID, category name, and social media links.
-        return `ID: ${category.id} | <span class="clickable-post" onclick="executeCommand('posts ${category.id}')">${category.name} | ${generateShareLinks(categoryUrl, categoryTitle)}</span>`;
-    }).join('<br>');
+        // Generate social media share links
+        const socialMediaLinks = generateShareLinks(categoryUrl, categoryTitle);
 
-    appendCommandLineToHistory(output);
+        return `ID: ${category.id} | <span class="clickable-post" onclick="executeCommand('posts ${category.id}')">${category.name}</span> | <span>${socialMediaLinks}</span>`;
+    }).join('<br>');
+    history.innerHTML += output;
 }
 
 async function listPostsByCategory(categoryId) {
     try {
-        const response = await fetch(`/wp-json/wp/v2/posts?categories=${categoryId}`);
-        const posts = await response.json();
-        const output = posts.map(post => {
+        let response = await fetch(`/wp-json/wp/v2/posts?categories=${categoryId}`);
+        let posts = await response.json();
+        let output = posts.map(post => {
             let date = new Date(post.date).toLocaleDateString();
             return `ID: ${post.id} | <span class="clickable-post" onclick="executeCommand('cat ${post.id}')">${post.title.rendered}</span> | Date: ${date}`;
         }).join('<br>');
-
-        appendCommandLineToHistory(output);
+        history.innerHTML += output;
     } catch (error) {
-        await outputError(`Error fetching posts for category ${categoryId}`);
+        outputError(`Error fetching posts for category ${categoryId}`);
     }
 }
 
 async function getCategoryIDByName(categoryName) {
     try {
-        const response = await fetch(`wp-json/wp/v2/categories?slug=${categoryName}`);
-        const categories = await response.json();
+        let response = await fetch(`wp-json/wp/v2/categories?slug=${categoryName}`);
+        let categories = await response.json();
         if (categories.length > 0) {
             return categories[0].id; // Assuming the first category is the one we want
         } else {
@@ -387,21 +317,13 @@ async function getCategoryIDByName(categoryName) {
     }
 }
 
+
 async function searchPosts(query) {
-    // AJAX request to search posts
+    // AJAX request to WordPress to search posts
 }
 
 async function outputError(message) {
-    // Use backticks `` to create a multiline string
-    // Add a class 'terminal-error' to this div that you can use to style it with CSS
-    let errorMessage = `
-        <div class="terminal-error">
-            bash: ${message}: command not found
-        </div>
-    `;
-
-    appendCommandLineToHistory(errorMessage);
-    scrollToBottomOfHistory();
+    // Display error message in the terminal
 }
 
 function openImagePopup(imageUrl) {
@@ -450,4 +372,17 @@ async function getTotalCategories() {
         console.error('Error fetching total categories:', error);
         return 'Unavailable';
     }
+}
+
+
+function generateShareLinks(url, title) {
+    const twitterShareUrl = `https://twitter.com/intent/tweet?url=${url}&text=${title}`;
+    const facebookShareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}`;
+    const linkedInShareUrl = `https://www.linkedin.com/shareArticle?mini=true&url=${url}&title=${title}`;
+
+    return `<span class="text-orange">Share on</span>
+    <a href="${twitterShareUrl}" target="_blank" class="terminal-link">Twitter</a> |
+    <a href="${facebookShareUrl}" target="_blank" class="terminal-link">Facebook</a> |
+    <a href="${linkedInShareUrl}" target="_blank" class="terminal-link">LinkedIn</a>
+    `;
 }
