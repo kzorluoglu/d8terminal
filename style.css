@@ -63,9 +63,13 @@ body, html {
 }
 
 .clickable-post {
-    color: #4A90E2; /* Example color */
+    color: #FF865C; /* Ubuntu terminal link color */
     cursor: pointer;
-    text-decoration: underline;
+    text-decoration: none;
+}
+
+.shared-links {
+    font-size: .7rem;
 }
 
 .terminal-button {
@@ -155,8 +159,11 @@ pre {
 }
 
 code {
+    background-color: #f5f5f5; /* Light grey background */
     font-family: monospace;
     font-size: 0.9em; /* Slightly smaller font size */
+    color: #666; /* Darker text color for readability */
+    border: 1px solid #ddd; /* Light border */
 }
 @media (max-width: 600px) {
     pre {
