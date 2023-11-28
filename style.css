@@ -178,3 +178,8 @@ ul, ol {
     margin-left: 20px;
     margin-bottom: 1em;
 }
+
+.terminal-error {
+    color: #FF0000; /* Red color */
+    /* Add any other styles as necessary */
+}
