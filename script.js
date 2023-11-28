@@ -278,10 +278,13 @@ async function listPosts(page = 1, perPage = 10) {
         }
 
         const posts = await fetchPosts(page, perPage);
-        const output = outputPosts(posts);
+        const output = posts.map(post => {
+            let date = new Date(post.date).toLocaleDateString();
+            return `ID: ${post.id} | <span class="clickable-post" onclick="executeCommand('cat ${post.id}')">${post.title.rendered}</span> | Date: ${date} | ${generateSocialMediaUrls(post)}`;
+        }).join('<br><br>'); // Separate each item with two line breaks
+
         appendCommandLineToHistory(output);
         updatePaginationControls(page, totalPages, perPage);
-
     } catch (error) {
         await outputError('Error fetching posts');
     }
